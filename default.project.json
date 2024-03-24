@@ -5,7 +5,7 @@
 
     "ReplicatedStorage": {
       "Shared": {
-        "$path": "src/shared"
+        "$path": "src/ReplicatedStorage"
       },
       "Packages":{
         "$path": "Packages"
@@ -14,21 +14,20 @@
 
     "ServerScriptService": {
       "Server": {
-        "$path": "src/server"
+        "$path": "src/ServerScriptService"
       }
     },
 
     "StarterPlayer": {
       "StarterPlayerScripts": {
         "Client": {
-          "$path": "src/client"
+          "$path": "src/StarterPlayer"
         }
       }
     },
-    "SoundService": {
-      "$properties": {
-        "RespectFilteringEnabled": true
-      }
+
+    "ServerStorage": {
+      "$path": "src/ServerStorage"
     }
   }
 }
