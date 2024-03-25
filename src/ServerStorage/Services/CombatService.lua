@@ -1,3 +1,4 @@
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Utils = require(ReplicatedStorage.Shared.Utils)
 local Knit = require(ReplicatedStorage.Packages.Knit)
 
