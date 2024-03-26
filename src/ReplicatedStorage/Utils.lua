@@ -90,7 +90,7 @@ function Utils.getAdaptedParams(damage, range, executorName, size, position, cus
 
 	local Effects = customEffects or defaultEffects
 
-	local newParams = combatParams
+	local newParams = combatParams:GetDefaultParams()
 	newParams.Damage = damage or 5
 	newParams.Range = range or 20
 	newParams.ExecutorName = executorName or ""

@@ -7,7 +7,6 @@ local Player = Players.LocalPlayer
 local CombatController = Knit.CreateController({
 	Name = "CombatController",
 	--Animations = ReplicatedStorage:WaitForChild("Animations"):WaitForChild("Combat"),
-	CombatParams = require(ReplicatedStorage.Shared.CombatParams),
 })
 
 --[[

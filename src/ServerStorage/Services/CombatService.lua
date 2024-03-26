@@ -47,17 +47,21 @@ function adaptParamsWithDefault(params, default)
 	return adaptedParams
 end
 
-function makePlayerInCooldown(cooldownType, player, time)
-	local character = player.Character
-	CollectionService:AddTag(character, cooldownType)
+function makePlayerInCooldown(cooldownType, playerName, time)
+	local Player = Players:FindFirstChild(playerName)
+	local HumanoidRootPart = Player.Character:FindFirstChild("HumanoidRootPart")
+	CollectionService:AddTag(HumanoidRootPart, cooldownType)
 	task.delay(time, function()
-		CollectionService:RemoveTag(character, cooldownType)
+		local Tags = CollectionService:GetAllTags(HumanoidRootPart)
+		warn(Tags)
+		CollectionService:RemoveTag(HumanoidRootPart, cooldownType)
 	end)
 end
 
-function checkIfInCooldown(player, specific)
-	local character = player.Character
-	local Tags = CollectionService:GetAllTags(character)
+function checkIfInCooldown(playerName, specific)
+	local Player = Players:FindFirstChild(playerName)
+	local HumanoidRootPart = Player.Character:FindFirstChild("HumanoidRootPart")
+	local Tags = CollectionService:GetAllTags(HumanoidRootPart)
 	for _, x in pairs(Tags) do
 		if x == specific then
 			return true
@@ -114,17 +118,14 @@ function CombatService.Client:SanityCheck(player, params)
 		warn("Sanity Check failed: HumanoidRootPart not found.")
 		return
 	end
-	if not checkIfInCooldown(player, params["HitType"]) then
-		print("Executing hit")
+	if not checkIfInCooldown(player.Name, params["HitType"]) then
 		self.Server:CreateHitBox(params)
 	end
 end
 
 function CombatService:TagHumanoid(params: table, Enemys: table)
-	local AdaptedParams = adaptParamsWithDefault(params, self.defaultParams)
+	local AdaptedParams = adaptParamsWithDefault(params, self.defaultParams:GetDefaultParams())
 	local Player = Players:FindFirstChild(params["ExecutorName"])
-	warn(AdaptedParams)
-
 	for _, x in pairs(Enemys) do
 		if x:IsA("Model") then
 			local hum = x:FindFirstChildOfClass("Humanoid")
@@ -134,7 +135,7 @@ function CombatService:TagHumanoid(params: table, Enemys: table)
 		end
 	end
 
-	makePlayerInCooldown(params["HitType"], Player, 1)
+	makePlayerInCooldown(AdaptedParams["HitType"], Player.Name, 0.4)
 end
 
 function CombatService:KnitStart() end

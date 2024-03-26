@@ -1,4 +1,6 @@
-local params = {
+local Settings = {}
+
+Settings.params = {
     ["OnlyHumanoids"] = true,
 		["ExecutorName"] = "",
 		["Size"] = Vector3.one,
@@ -14,4 +16,20 @@ local params = {
 		},
 }
 
-return params
+Settings.Styles = {
+	["BasicCombat"] = {
+		["Damage"] = 5,
+		["Range"] = 3, -- Eixo X da hitbox
+		["AttackSpeed"] = 0.35 -- Tempo em segundos de cooldown entre cada hit
+	}
+}
+
+function Settings:GetDefaultParams()
+	return self.params
+end
+
+function Settings:GetStyles()
+	return self.Styles
+end
+
+return Settings
