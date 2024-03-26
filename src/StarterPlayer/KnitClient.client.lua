@@ -10,3 +10,13 @@ for _, module in pairs(Controllers:GetDescendants()) do
 end
 
 Knit.Start():catch(warn)
+
+local UserInputService = game:GetService("UserInputService")
+
+UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		local CombatController = Knit.GetController("CombatController")
+		warn("Clicking")
+		CombatController:lightHit()
+	end
+end)

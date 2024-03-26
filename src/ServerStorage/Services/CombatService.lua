@@ -1,11 +1,15 @@
+local CollectionService = game:GetService("CollectionService")
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local Utils = require(ReplicatedStorage.Shared.Utils)
 local Knit = require(ReplicatedStorage.Packages.Knit)
+local Signal = require(ReplicatedStorage.Packages._Index["sleitnick_signal@2.0.1"].signal)
 
 local CombatService = Knit.CreateService({
 	Name = "CombatService",
 	Client = {},
+	defaultParams = require(ReplicatedStorage.Shared:FindFirstChild("CombatParams")),
 })
 
 --[[
@@ -14,48 +18,87 @@ local CombatService = Knit.CreateService({
 	```lua
 		params = {
 			["OnlyHumanoids"] = true,
+			["ExecutorName"] = "danilozoom", -- Exemplo de valor
 			["Size"] = Vector3,
 			["Position"] = Vector3 / CFrame,
 			["Damage"] = 0,
+			["Range"] = 100,
+			["HitType"] = "normalHit",
 			["Effects"] = {
-				["Burning"] = false
-				["Parryable"] = true
-				["Blockable"] = true
-				["StunTime"] = 0.5
+				["Burning"] = false,
+				["Parryable"] = true,
+				["Blockable"] = true,
+				["StunTime"] = 0.5,
 			},
 		}
 	```
 ]]
 
-function CheckHitBox(params)
-	local halfSize = params["Size"] / 2
-	local lowerBound = params["Position"] - halfSize
-	local upperBound = params["Position"] + halfSize
+function adaptParamsWithDefault(params, default)
+	local adaptedParams = {}
+	for key, value in pairs(default) do
+		adaptedParams[key] = value
+	end
 
-	local Parts = workspace:GetPartBoundsInBox(lowerBound, upperBound)
+	for key, value in pairs(params) do
+		adaptedParams[key] = value
+	end
+
+	return adaptedParams
+end
+
+function makePlayerInCooldown(cooldownType, player, time)
+	local character = player.Character
+	CollectionService:AddTag(character, cooldownType)
+	task.delay(time, function()
+		CollectionService:RemoveTag(character, cooldownType)
+	end)
+end
+
+function checkIfInCooldown(player, specific)
+	local character = player.Character
+	local Tags = CollectionService:GetAllTags(character)
+	for _, x in pairs(Tags) do
+		if x == specific then
+			return true
+		end
+	end
+	return false
+end
+
+function CheckHitBox(params)
+	local Parts = workspace:GetPartBoundsInBox(params["Position"], params["Size"], OverlapParams.new())
 
 	local Enemys = {}
+	local EnemySet = {}
+
 	for _, part in pairs(Parts) do
 		local humanoid = part.Parent:FindFirstChildOfClass("Humanoid")
-		if params["OnlyHumanoid"] then
-			if humanoid then
+		if humanoid then
+			if not EnemySet[part.Parent] and part.Parent.Name ~= params["ExecutorName"] then
 				table.insert(Enemys, part.Parent)
+				EnemySet[part.Parent] = true
 			end
 		else
-			if not Enemys[part.Parent] then
-				table.insert(Enemys, part.Parent)
+			if not EnemySet[part] then
+				table.insert(Enemys, part)
+				EnemySet[part] = true
 			end
 		end
 	end
 
 	if RunService:IsServer() then
-		CombatService:TagHumanoid(params)
+		CombatService:TagHumanoid(params, Enemys)
 	else
 		return Enemys
 	end
 end
 
 function CombatService.Client:CreateHitBox(player, params)
+	return CheckHitBox(params)
+end
+
+function CombatService:CreateHitBox(params)
 	return CheckHitBox(params)
 end
 
@@ -71,23 +114,28 @@ function CombatService.Client:SanityCheck(player, params)
 		warn("Sanity Check failed: HumanoidRootPart not found.")
 		return
 	end
-
-	local distance = (HumanoidRootPart.Position - params["Position"]).Magnitude
-	if distance > 400 then
-		warn(
-			("Sanity Check failed for %s: The player is too far from the location that he's trying to attack, distance: %d"):format(
-				player.Name,
-				distance
-			)
-		)
+	if not checkIfInCooldown(player, params["HitType"]) then
+		print("Executing hit")
+		self.Server:CreateHitBox(params)
 	end
 end
 
-function CombatService:CreateHitBox(params)
-	return CheckHitBox(params)
-end
+function CombatService:TagHumanoid(params: table, Enemys: table)
+	local AdaptedParams = adaptParamsWithDefault(params, self.defaultParams)
+	local Player = Players:FindFirstChild(params["ExecutorName"])
+	warn(AdaptedParams)
 
-function CombatService:TagHumanoid(params) end
+	for _, x in pairs(Enemys) do
+		if x:IsA("Model") then
+			local hum = x:FindFirstChildOfClass("Humanoid")
+			if hum then
+				hum:TakeDamage(AdaptedParams["Damage"])
+			end
+		end
+	end
+
+	makePlayerInCooldown(params["HitType"], Player, 1)
+end
 
 function CombatService:KnitStart() end
 

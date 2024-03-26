@@ -1,4 +1,6 @@
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local combatParams = require(ReplicatedStorage.Shared.CombatParams)
 local Utils = {}
 
 function Utils.getApproximatedString(inputName, candidates)
@@ -76,6 +78,28 @@ function Utils:FindItemInPlayerInventory(playerName, toolName)
 	else
 		warn("Couldnt find the player with the name: " .. playerName)
 	end
+end
+
+function Utils.getAdaptedParams(damage, range, executorName, size, position, customEffects, hitType)
+	local defaultEffects = {
+		["Burning"] = false,
+		["Parryable"] = true,
+		["Blockable"] = true,
+		["StunTime"] = 0.5,
+	}
+
+	local Effects = customEffects or defaultEffects
+
+	local newParams = combatParams
+	newParams.Damage = damage or 5
+	newParams.Range = range or 20
+	newParams.ExecutorName = executorName or ""
+	newParams.Size = size or Vector3.new(5, 5, 5)
+	newParams.Position = position or Vector3.zero
+	newParams.Effects = Effects
+	newParams.hitType = hitType or "normalHit"
+
+	return newParams
 end
 
 return Utils
