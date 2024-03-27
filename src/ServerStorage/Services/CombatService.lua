@@ -11,7 +11,6 @@ local CombatService = Knit.CreateService({
 	Client = {},
 	defaultParams = require(ReplicatedStorage.Shared:FindFirstChild("CombatParams")),
 })
-
 --[[
 	Parâmetros de exemplo que devem ser passados para a função CreateHitBox:
 
@@ -47,27 +46,48 @@ function adaptParamsWithDefault(params, default)
 	return adaptedParams
 end
 
-function makePlayerInCooldown(cooldownType, playerName, time)
-	local Player = Players:FindFirstChild(playerName)
-	local HumanoidRootPart = Player.Character:FindFirstChild("HumanoidRootPart")
-	CollectionService:AddTag(HumanoidRootPart, cooldownType)
-	task.delay(time, function()
-		local Tags = CollectionService:GetAllTags(HumanoidRootPart)
-		warn(Tags)
-		CollectionService:RemoveTag(HumanoidRootPart, cooldownType)
-	end)
+function makeTemporaryTag(cooldownType, playerName, time)
+	local Player
+	if typeof(playerName) == "string" then
+		Player = Players:FindFirstChild(playerName)
+		local HumanoidRootPart = Player.Character:FindFirstChild("HumanoidRootPart")
+		CollectionService:AddTag(HumanoidRootPart, cooldownType)
+		task.delay(time, function()
+			CollectionService:RemoveTag(HumanoidRootPart, cooldownType)
+		end)
+	else
+		Player = playerName
+		local HumanoidRootPart = Player:FindFirstChild("HumanoidRootPart")
+		CollectionService:AddTag(HumanoidRootPart, cooldownType)
+		task.delay(time, function()
+			CollectionService:RemoveTag(HumanoidRootPart, cooldownType)
+		end)
+	end
 end
 
 function checkIfInCooldown(playerName, specific)
 	local Player = Players:FindFirstChild(playerName)
 	local HumanoidRootPart = Player.Character:FindFirstChild("HumanoidRootPart")
-	local Tags = CollectionService:GetAllTags(HumanoidRootPart)
+	local Tags = CollectionService:GetTags(HumanoidRootPart)
 	for _, x in pairs(Tags) do
 		if x == specific then
 			return true
 		end
 	end
 	return false
+end
+
+function CheckAllConditions(playerName)
+	local Player = Players:FindFirstChild(playerName)
+	local HumanoidRootPart = Player.Character:FindFirstChild("HumanoidRootPart")
+	local Tags = CollectionService:GetTags(HumanoidRootPart)
+
+	for key, tag in pairs(Tags) do
+		if tag == "Stun" then
+			return false
+		end
+	end
+	return true
 end
 
 function CheckHitBox(params)
@@ -118,24 +138,33 @@ function CombatService.Client:SanityCheck(player, params)
 		warn("Sanity Check failed: HumanoidRootPart not found.")
 		return
 	end
-	if not checkIfInCooldown(player.Name, params["HitType"]) then
+	if not checkIfInCooldown(player.Name, params["HitType"]) and CheckAllConditions(player.Name) then
 		self.Server:CreateHitBox(params)
 	end
 end
 
 function CombatService:TagHumanoid(params: table, Enemys: table)
 	local AdaptedParams = adaptParamsWithDefault(params, self.defaultParams:GetDefaultParams())
-	local Player = Players:FindFirstChild(params["ExecutorName"])
-	for _, x in pairs(Enemys) do
-		if x:IsA("Model") then
-			local hum = x:FindFirstChildOfClass("Humanoid")
-			if hum then
-				hum:TakeDamage(AdaptedParams["Damage"])
+	local ExecutorName = params["ExecutorName"]
+	local Player = Players:FindFirstChild(ExecutorName)
+	if not Player then
+		return
+	end
+
+	local stunDuration = 0.5
+	local hitDuration = 0.4
+	for _, Enemy in ipairs(Enemys) do
+		if Enemy:IsA("Model") then
+			local humanoid = Enemy:FindFirstChildOfClass("Humanoid")
+			if humanoid then
+				humanoid:TakeDamage(AdaptedParams["Damage"])
+				local target = Players:FindFirstChild(Enemy.Name) or Enemy
+				makeTemporaryTag("Stun", target, stunDuration)
 			end
 		end
 	end
 
-	makePlayerInCooldown(AdaptedParams["HitType"], Player.Name, 0.4)
+	makeTemporaryTag(AdaptedParams["HitType"], Player.Name, hitDuration)
 end
 
 function CombatService:KnitStart() end

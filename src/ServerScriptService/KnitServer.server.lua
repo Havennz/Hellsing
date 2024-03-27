@@ -11,3 +11,7 @@ for _, module in pairs(Services:GetDescendants()) do
 end
 
 Knit.Start():catch(warn)
+
+--[[
+	https://sleitnick.github.io/Knit/docs/intro
+]]
