@@ -150,13 +150,27 @@ function CombatService:TagHumanoid(params: table, Enemys: table)
 	if not Player then
 		return
 	end
-
+	-- Hit sound: 1089136667
 	local stunDuration = 0.5
 	local hitDuration = 0.4
 	for _, Enemy in ipairs(Enemys) do
 		if Enemy:IsA("Model") then
 			local humanoid = Enemy:FindFirstChildOfClass("Humanoid")
+			local humanoidRootPart = Enemy:FindFirstChild("HumanoidRootPart")
+			local Torso = Enemy:FindFirstChild("Torso")
+			local isRag = Enemy:FindFirstChild("IsRagdoll")
 			if humanoid then
+				if params["Effects"]["Knockback"] then
+					if isRag ~= nil then
+						isRag.Value = true
+						Torso:ApplyImpulse(Torso.CFrame.LookVector * -600)
+						Torso:ApplyImpulse(Vector3.new(0, 600, 0))
+						task.delay(1.5, function()
+							isRag.Value = false
+						end)
+					end
+				end
+				Utils:GerarSom(1089136667, 0.4, Torso)
 				humanoid:TakeDamage(AdaptedParams["Damage"])
 				local target = Players:FindFirstChild(Enemy.Name) or Enemy
 				makeTemporaryTag("Stun", target, stunDuration)

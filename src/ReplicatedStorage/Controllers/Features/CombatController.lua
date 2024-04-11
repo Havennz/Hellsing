@@ -3,6 +3,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Utils = require(ReplicatedStorage.Shared.Utils)
 local Knit = require(ReplicatedStorage.Packages.Knit)
 local Player = Players.LocalPlayer
+local hitCounter = 0
 
 local CombatController = Knit.CreateController({
 	Name = "CombatController",
@@ -27,11 +28,27 @@ local CombatController = Knit.CreateController({
 ]]
 
 function CombatController:lightHit()
+	local customParams = {
+		["Burning"] = false,
+		["Parryable"] = true,
+		["Blockable"] = true,
+		["StunTime"] = 0.5,
+		["Knockback"] = false,
+	}
+
+	if Player:GetAttribute("LastHit") ~= nil and hitCounter == 4 then
+		customParams.Knockback = true
+		hitCounter = 0
+	end
+
+	Player:SetAttribute("LastHit", tick())
 	local CombatService = Knit.GetService("CombatService")
 	local char = Player.Character
 	local hrp = char:FindFirstChild("HumanoidRootPart")
 	if hrp then
-		local Params = Utils.getAdaptedParams(5, 20, Players.LocalPlayer.Name, Vector3.new(10, 10, 10), hrp.CFrame)
+		hitCounter += 1
+		local Params =
+			Utils.getAdaptedParams(5, 20, Players.LocalPlayer.Name, Vector3.new(10, 10, 10), hrp.CFrame, customParams)
 		CombatService:SanityCheck(Params)
 	else
 		warn("Humanoidrootpart not found")

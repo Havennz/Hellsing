@@ -23,6 +23,12 @@
         "Client": {
           "$path": "src/StarterPlayer"
         }
+      },
+      
+      "StarterCharacterScripts": {
+        "CharacterScripts": {
+          "$path": "src/CharacterScripts"
+        }
       }
     },
 

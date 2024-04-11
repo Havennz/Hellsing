@@ -86,6 +86,7 @@ function Utils.getAdaptedParams(damage, range, executorName, size, position, cus
 		["Parryable"] = true,
 		["Blockable"] = true,
 		["StunTime"] = 0.5,
+		["Knockback"] = false,
 	}
 
 	local Effects = customEffects or defaultEffects
@@ -100,6 +101,16 @@ function Utils.getAdaptedParams(damage, range, executorName, size, position, cus
 	newParams.hitType = hitType or "normalHit"
 
 	return newParams
+end
+
+function Utils:GerarSom(idMusica, volume, parent)
+	local som = Instance.new("Sound")
+	som.SoundId = "rbxassetid://" .. tostring(idMusica)
+	som.Volume = volume or 1
+	som.PlaybackSpeed = 1
+	som.Parent = parent
+	som:Play()
+	game:GetService("Debris"):AddItem(som, som.TimeLength + 1)
 end
 
 return Utils

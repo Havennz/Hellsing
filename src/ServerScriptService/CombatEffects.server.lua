@@ -15,7 +15,6 @@ local Observers = require(ReplicatedStorage.Packages.Observers)
 Observers.observePlayer(function(player)
 	Observers.observeCharacter(function(player, character)
 		print("Character spawned for " .. player.Name)
-
 		-- Wait for humanoid:
 		local humanoid = character:WaitForChild("Humanoid", 60) -- waits at least 60 seconds before giving up
 
@@ -42,6 +41,15 @@ Observers.observePlayer(function(player)
 			end
 		end)
 
+		Observers.observeTag("Ragdoll", function(RootPart: Part)
+			local char = RootPart.Parent
+			local isRag = char:FindFirstChild("IsRagdoll")
+			isRag.Value = true
+			return function()
+				isRag.Value = false
+			end
+		end)
+
 		Observers.observeTag("onFire", function(RootPart: BasePart)
 			local fireEffect = ReplicatedStorage.Effects.Particles.Fire.FireParticle:Clone()
 			local playerName = RootPart.Parent.Name
@@ -61,7 +69,6 @@ Observers.observePlayer(function(player)
 				fireEffect.Fire1.Enabled = false
 				Debris:AddItem(fireEffect, 1)
 				task.cancel(fireTickThread)
-				print(playerName .. " is no longer on fire")
 			end
 		end)
 
