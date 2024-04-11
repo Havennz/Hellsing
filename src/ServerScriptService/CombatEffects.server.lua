@@ -1,4 +1,5 @@
 local CollectionService = game:GetService("CollectionService")
+local Debris = game:GetService("Debris")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -42,10 +43,12 @@ Observers.observePlayer(function(player)
 		end)
 
 		Observers.observeTag("onFire", function(RootPart: BasePart)
+			local fireEffect = ReplicatedStorage.Effects.Particles.Fire.FireParticle:Clone()
 			local playerName = RootPart.Parent.Name
 			local Humanoid = RootPart.Parent:FindFirstChildOfClass("Humanoid")
 			local fireTickThread
 			if Humanoid then
+				fireEffect.Parent = RootPart
 				fireTickThread = task.spawn(function()
 					while true do
 						task.wait(0.4)
@@ -55,6 +58,8 @@ Observers.observePlayer(function(player)
 			end
 
 			return function()
+				fireEffect.Fire1.Enabled = false
+				Debris:AddItem(fireEffect, 1)
 				task.cancel(fireTickThread)
 				print(playerName .. " is no longer on fire")
 			end
