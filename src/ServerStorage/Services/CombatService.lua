@@ -5,6 +5,7 @@ local RunService = game:GetService("RunService")
 local Utils = require(ReplicatedStorage.Shared.Utils)
 local Knit = require(ReplicatedStorage.Packages.Knit)
 local Signal = require(ReplicatedStorage.Packages._Index["sleitnick_signal@2.0.1"].signal)
+local Animations = ReplicatedStorage.Assets.CombatAnimations
 
 local CombatService = Knit.CreateService({
 	Name = "CombatService",
@@ -44,6 +45,34 @@ function adaptParamsWithDefault(params, default)
 	end
 
 	return adaptedParams
+end
+
+function setNetOwner(Model, player)
+	for _, Object in ipairs(Model:GetDescendants()) do
+		if Object:IsA("BasePart") and Object:CanSetNetworkOwnership() then
+			Object:SetNetworkOwner(player)
+		end
+	end
+end
+
+local function PlayAnimation(humanoid, type)
+	local animator = humanoid:FindFirstChildWhichIsA("Animator") or Instance.new("Animator")
+	animator.Parent = humanoid
+	local hitCounter = math.random(1, 10)
+	local animation
+	if type == "hit" then
+		animation = (hitCounter % 2 == 0) and Animations.Stun1 or Animations.Stun2
+	end
+
+	local success, animationTrack = pcall(function()
+		return animator:LoadAnimation(animation)
+	end)
+
+	if success and animationTrack then
+		animationTrack:Play()
+	else
+		print("Error playing punch animation:", success, animationTrack)
+	end
 end
 
 function makeTemporaryTag(cooldownType, playerName, time)
@@ -94,6 +123,24 @@ function CheckAllConditions(playerName)
 		end
 	end
 	return true
+end
+
+local function getPlayerCharacter(executorName)
+	local player = Players:FindFirstChild(executorName)
+	if player then
+		local character = player.Character
+		if character then
+			return player, character
+		end
+	end
+
+	-- If player or character not found, try finding by name in workspace (onlky when working with npcs)
+	local characterInWorkspace = workspace:FindFirstChild(executorName)
+	if characterInWorkspace then
+		return characterInWorkspace, characterInWorkspace
+	end
+
+	return nil
 end
 
 function CheckHitBox(params)
@@ -152,10 +199,10 @@ end
 function CombatService:TagHumanoid(params: table, Enemys: table)
 	local AdaptedParams = adaptParamsWithDefault(params, self.defaultParams:GetDefaultParams())
 	local ExecutorName = params["ExecutorName"]
-	local Player = Players:FindFirstChild(ExecutorName) or workspace:FindFirstChild(ExecutorName)
-	if not Player then
+	if getPlayerCharacter(ExecutorName) == nil then
 		return
 	end
+	local Player, Character = getPlayerCharacter(ExecutorName)
 	local stunDuration = 2
 	local hitDuration = 0.4
 	for _, Enemy: Model in ipairs(Enemys) do
@@ -167,10 +214,19 @@ function CombatService:TagHumanoid(params: table, Enemys: table)
 				if params["Effects"]["Knockback"] then
 					if isRag ~= nil then
 						isRag.Value = true
-						Torso:ApplyImpulse(Torso.CFrame.LookVector * -400)
-						Torso:ApplyImpulse(Vector3.new(0, 400, 0))
+						warn("Applying Impulse")
+						setNetOwner(Enemy, Player)
+						local direction = (Torso.CFrame.Position - Character.Torso.CFrame.Position).unit -- first torso is enemy, second one is the player
+						Torso:ApplyImpulse(direction * 500)
+						Torso:ApplyImpulse(Vector3.new(0, 200, 0))
 						task.delay(1.5, function()
 							isRag.Value = false
+							local enemyPlr = Players:FindFirstChild(Enemy.Name)
+							if enemyPlr then
+								setNetOwner(Enemy, enemyPlr)
+							else
+								setNetOwner(Enemy, nil)
+							end
 						end)
 					end
 				end
@@ -178,6 +234,7 @@ function CombatService:TagHumanoid(params: table, Enemys: table)
 				humanoid:TakeDamage(AdaptedParams["Damage"])
 				local target = Players:FindFirstChild(Enemy.Name) or Enemy
 				makeTemporaryTag("Stun", target, stunDuration)
+				PlayAnimation(humanoid, "hit")
 			end
 		end
 	end

@@ -4,7 +4,9 @@ local Utils = require(ReplicatedStorage.Shared.Utils)
 local Knit = require(ReplicatedStorage.Packages.Knit)
 local Player = Players.LocalPlayer
 local hitCounter = 0
-
+local Animations = ReplicatedStorage.Assets.CombatAnimations
+local punchAnimCooldown = 0.4
+local lastPunch = tick()
 local CombatController = Knit.CreateController({
 	Name = "CombatController",
 	--Animations = ReplicatedStorage:WaitForChild("Animations"):WaitForChild("Combat"),
@@ -27,6 +29,23 @@ local CombatController = Knit.CreateController({
 	```
 ]]
 
+local function PlayPunchAnimation(humanoid, hitCounter)
+	local animator = humanoid:FindFirstChildWhichIsA("Animator") or Instance.new("Animator")
+	animator.Parent = humanoid
+
+	local animation = (hitCounter % 2 == 0) and Animations.LeftPunch or Animations.RightPunch
+
+	local animationTrack = pcall(function()
+		return animator:LoadAnimation(animation)
+	end)
+
+	if animationTrack then
+		animationTrack:Play()
+	else
+		print("Error playing punch animation:", unpack(animationTrack))
+	end
+end
+
 function CombatController:lightHit()
 	local customParams = {
 		["Burning"] = false,
@@ -44,11 +63,31 @@ function CombatController:lightHit()
 	if Player:GetAttribute("LastHit") ~= nil and tick() - Player:GetAttribute("LastHit") > 1.5 then
 		hitCounter = 0
 	end
-
 	Player:SetAttribute("LastHit", tick())
 	local CombatService = Knit.GetService("CombatService")
 	local char = Player.Character
 	local hrp = char:FindFirstChild("HumanoidRootPart")
+	local Humanoid = char:FindFirstChild("Humanoid")
+
+	if tick() - lastPunch > punchAnimCooldown then
+		local animator = Humanoid:FindFirstChildWhichIsA("Animator")
+		if not animator then
+			animator = Instance.new("Animator")
+			animator.Parent = Humanoid
+		end
+
+		if hitCounter % 2 == 0 then
+			local animation = Animations.LeftPunch
+			local animationTrack = animator:LoadAnimation(animation)
+			animationTrack:Play()
+		else
+			local animation = Animations.RightPunch
+			local animationTrack = animator:LoadAnimation(animation)
+			animationTrack:Play()
+		end
+		lastPunch = tick()
+	end
+
 	if hrp then
 		hitCounter += 1
 		local Params =
