@@ -49,8 +49,10 @@ end
 function makeTemporaryTag(cooldownType, playerName, time)
 	local Player
 	if typeof(playerName) == "string" then
-		Player = Players:FindFirstChild(playerName)
-		local HumanoidRootPart = Player.Character:FindFirstChild("HumanoidRootPart")
+		local Player = Players:FindFirstChild(playerName)
+		local Character = Player and Player:IsA("Player") and Player.Character
+			or game.Workspace:FindFirstChild(playerName)
+		local HumanoidRootPart = Character:FindFirstChild("HumanoidRootPart")
 		CollectionService:AddTag(HumanoidRootPart, cooldownType)
 		task.delay(time, function()
 			CollectionService:RemoveTag(HumanoidRootPart, cooldownType)
@@ -67,7 +69,9 @@ end
 
 function checkIfInCooldown(playerName, specific)
 	local Player = Players:FindFirstChild(playerName)
-	local HumanoidRootPart = Player.Character:FindFirstChild("HumanoidRootPart")
+	local Character = Player and Player:IsA("Player") and Player.Character or game.Workspace:FindFirstChild(playerName)
+
+	local HumanoidRootPart = Character:FindFirstChild("HumanoidRootPart")
 	local Tags = CollectionService:GetTags(HumanoidRootPart)
 	for _, x in pairs(Tags) do
 		if x == specific then
@@ -79,7 +83,9 @@ end
 
 function CheckAllConditions(playerName)
 	local Player = Players:FindFirstChild(playerName)
-	local HumanoidRootPart = Player.Character:FindFirstChild("HumanoidRootPart")
+	local Character = Player and Player:IsA("Player") and Player.Character or game.Workspace:FindFirstChild(playerName)
+
+	local HumanoidRootPart = Character:FindFirstChild("HumanoidRootPart")
 	local Tags = CollectionService:GetTags(HumanoidRootPart)
 
 	for key, tag in pairs(Tags) do
@@ -127,7 +133,7 @@ function CombatService:CreateHitBox(params)
 end
 
 function CombatService.Client:SanityCheck(player, params)
-	local Character = player.Character
+	local Character = (player:IsA("Model") and player) or player.Character
 	if not Character then
 		warn("Sanity Check failed: Player's character not found.")
 		return
@@ -146,25 +152,23 @@ end
 function CombatService:TagHumanoid(params: table, Enemys: table)
 	local AdaptedParams = adaptParamsWithDefault(params, self.defaultParams:GetDefaultParams())
 	local ExecutorName = params["ExecutorName"]
-	local Player = Players:FindFirstChild(ExecutorName)
+	local Player = Players:FindFirstChild(ExecutorName) or workspace:FindFirstChild(ExecutorName)
 	if not Player then
 		return
 	end
-	-- Hit sound: 1089136667
-	local stunDuration = 0.5
+	local stunDuration = 2
 	local hitDuration = 0.4
-	for _, Enemy in ipairs(Enemys) do
+	for _, Enemy: Model in ipairs(Enemys) do
 		if Enemy:IsA("Model") then
 			local humanoid = Enemy:FindFirstChildOfClass("Humanoid")
-			local humanoidRootPart = Enemy:FindFirstChild("HumanoidRootPart")
-			local Torso = Enemy:FindFirstChild("Torso")
+			local Torso: Part = Enemy:FindFirstChild("Torso")
 			local isRag = Enemy:FindFirstChild("IsRagdoll")
 			if humanoid then
 				if params["Effects"]["Knockback"] then
 					if isRag ~= nil then
 						isRag.Value = true
-						Torso:ApplyImpulse(Torso.CFrame.LookVector * -600)
-						Torso:ApplyImpulse(Vector3.new(0, 600, 0))
+						Torso:ApplyImpulse(Torso.CFrame.LookVector * -400)
+						Torso:ApplyImpulse(Vector3.new(0, 400, 0))
 						task.delay(1.5, function()
 							isRag.Value = false
 						end)

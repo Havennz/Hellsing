@@ -41,6 +41,10 @@ function CombatController:lightHit()
 		hitCounter = 0
 	end
 
+	if Player:GetAttribute("LastHit") ~= nil and tick() - Player:GetAttribute("LastHit") > 1.5 then
+		hitCounter = 0
+	end
+
 	Player:SetAttribute("LastHit", tick())
 	local CombatService = Knit.GetService("CombatService")
 	local char = Player.Character

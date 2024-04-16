@@ -43,6 +43,7 @@ Observers.observePlayer(function(player)
 
 		Observers.observeTag("Ragdoll", function(RootPart: Part)
 			local char = RootPart.Parent
+			local Torso = char:FindFirstChild("Torso")
 			local isRag = char:FindFirstChild("IsRagdoll")
 			isRag.Value = true
 			return function()
